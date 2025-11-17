@@ -92,18 +92,15 @@ function agregarFila(data = null) {
 // Guardar cambios (PUT)
 // =========================================================
 async function guardarCambios() {
-    const filas = [...document.querySelectorAll("#tablaItems tbody tr")];
-
-    const items = filas.map(tr => ({
-        cliente_id: Number(tr.querySelector(".id").value),
-        nombre: tr.querySelector(".nombre").value
-    }));
-    console.log(items)
-    const res = await fetch(`${API}/clientes/${items.cliente_id}`, {
+    
+    const cliente_id = Number(document.querySelector(".id").value);
+    const nombre = document.querySelector(".nombre").value
+    
+    const res = await fetch(`${API}/clientes/${cliente_id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            items
+            cliente_id, nombre
         })
     });
 

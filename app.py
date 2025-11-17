@@ -294,6 +294,26 @@ def ver_cliente(cliente_id):
         "nombre": cliente["nombre"]
     })
 
+@app.put("/clientes/<int:cliente_id>")
+def editar_cliente(cliente_id):
+    data = request.json
+    cliente_id = data["cliente_id"]
+    nombre = data["nombre"]
+
+    # Verificar que exista
+    pedido = query("SELECT * FROM clientes WHERE id = ?", (cliente_id,), one=True)
+    if pedido is None:
+        return jsonify({"error": "Cliente no encontrado"}), 404
+
+    # Actualizar pedido
+    execute("""
+        UPDATE clientes
+        SET nombre = ?
+        WHERE id = ?
+    """, (nombre, cliente_id))
+
+    return jsonify({"message": "Cliente actualizado"})
+
 @app.get("/debug/items")
 def debug_items():
     rows = query("SELECT * FROM pedido_items")
