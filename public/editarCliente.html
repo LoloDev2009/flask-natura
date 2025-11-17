@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Editar Pedido</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+    }
+    input, select {
+        padding: 5px;
+        margin: 4px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    th, td {
+        border: 1px solid #aaa;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background-color: #eee;
+    }
+    button {
+        padding: 5px 10px;
+        margin: 4px;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+
+<h1>Editar Cliente</h1>
+
+<h2>Datos: </h2>
+
+<table id="tablaItems">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<br><br>
+
+<button onclick="guardarCambios()" style="background: #4CAF50; color:white;">
+    💾 Guardar Cambios
+</button>
+
+<script>
+const API = "http://127.0.0.1:5000";
+const urlParams = new URLSearchParams(window.location.search);
+const clienteId = urlParams.get("id");
+
+// =========================================================
+// Cargar datos del pedido
+// =========================================================
+async function cargarCliente() {
+    const res = await fetch(`${API}/clientes/${clienteId}`);
+    const data = await res.json();
+
+    const tbody = document.querySelector("#tablaItems tbody");
+    tbody.innerHTML = "";
+
+    agregarFila(data);
+}
+
+// =========================================================
+// Crear fila en la tabla
+// =========================================================
+function agregarFila(data = null) {
+    const tbody = document.querySelector("#tablaItems tbody");
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+        <td><input type="text" class="id" value="${data ? data.id : ""} " disabled ></td>
+        <td><input type="text" class="nombre" value="${data ? data.nombre : ""}"></td>
+    `;
+
+    tbody.appendChild(tr);
+}
+
+// =========================================================
+// Guardar cambios (PUT)
+// =========================================================
+async function guardarCambios() {
+    const filas = [...document.querySelectorAll("#tablaItems tbody tr")];
+
+    const items = filas.map(tr => ({
+        cliente_id: Number(tr.querySelector(".id").value),
+        nombre: tr.querySelector(".nombre").value
+    }));
+    console.log(items)
+    const res = await fetch(`${API}/clientes/${items.cliente_id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            items
+        })
+    });
+
+    const data = await res.json();
+    alert(data.message);
+    window.location.href = "index.html";
+}
+
+// =========================================================
+cargarCliente();
+</script>
+
+</body>
+</html>

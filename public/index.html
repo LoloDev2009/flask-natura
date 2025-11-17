@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Natura - CRUD Pedidos</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f6f6f6; }
+    h1 { text-align: center; }
+    .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    input, select { padding: 8px; margin: 5px 0; width: 100%; }
+    button { padding: 10px; margin-top: 10px; width: 100%; cursor: pointer; background: #4CAF50; border: none; color: white; border-radius: 5px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 10px; border-bottom: 1px solid #ccc; text-align: left; }
+    .item-row { background: #fafafa; }
+    #resultadosTabla {
+    max-height: 250px;        /* altura máxima */
+    overflow-y: auto;         /* scroll solo vertical */
+    border: 1px solid #ccc;
+    padding: 5px;
+    border-radius: 10px;
+    background: white;
+    scrollbar-width: thin;           /* Firefox */
+    scrollbar-color: #bbb #f1f1f1;   /* Firefox */
+}
+
+/* Chrome, Edge, Safari */
+#resultadosTabla::-webkit-scrollbar {
+    width: 8px;
+}
+
+#resultadosTabla::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+#resultadosTabla::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+#resultadosTabla::-webkit-scrollbar-thumb:hover {
+    background: #a9a9a9;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+th {
+    background: #4CAF50;
+    color: white;
+    padding: 12px;
+    text-align: left;
+    font-weight: bold;
+}
+
+td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+tr:nth-child(even) {
+    background: #f9f9f9;
+}
+.tabla-con-scroll {
+  max-height: 250px;        /* altura máxima visible */
+  overflow-y: auto;         /* scroll vertical interno */
+  border: 1px solid #e0e0e0;
+  padding: 6px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+/* Mejora visual del scrollbar */
+.tabla-con-scroll::-webkit-scrollbar { width: 8px; }
+.tabla-con-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 8px; }
+.tabla-con-scroll::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 8px; }
+.tabla-con-scroll::-webkit-scrollbar-thumb:hover { background: #9e9e9e; }
+
+/* Asegurar que la tabla se ajuste al contenedor */
+#resultadosTabla { width: 100%; border-collapse: collapse; table-layout: fixed; }
+#resultadosTabla th, #resultadosTabla td { word-wrap: break-word; }
+
+.btn-cant {
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: #4CAF50;
+    color: white;
+    font-size: 18px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn-cant:hover {
+    background: #45a049;
+}
+
+  </style>
+</head>
+<body>
+
+<h1>Gestión de Pedidos Natura</h1>
+
+<div class="card">
+  <h2>Buscar Producto</h2>
+  <input type="text" id="buscarInput" placeholder="Buscar por nombre o código..." />
+  <button onclick="buscarProducto()">Buscar</button>
+  <div id="resultadosContainer" class="tabla-con-scroll">
+    <table id="resultadosTabla"></table>
+  </div>    
+</div>
+
+<div class="card">
+  <h2>Crear Pedido</h2>
+  <label>Cliente ID:</label>
+  <input type="number" id="clienteId" placeholder="ID del cliente" />
+
+  <h3>Items del pedido</h3>
+  <table id="itemsTabla"></table>
+
+  <button onclick="crearPedido()">Guardar Pedido</button>
+</div>
+
+<div class="card">
+  <h2>Pedidos</h2>
+  <button onclick="cargarPedidos()">Recargar Lista</button>
+  <table id="pedidosTabla"></table>
+</div>
+<div class="card">
+  <h2>Clientes</h2>
+  <table id="clientesTabla"></table>
+  <button onclick="crearCliente()" style="width: 40%;">Agregar Cliente</button>
+</div>
+
+<script>
+let itemsPedido = [];
+
+function buscarProducto() {
+  const q = document.getElementById('buscarInput').value;
+  fetch(`http://127.0.0.1:5000/buscar-producto?q=${q}`)
+    .then(r => r.json())
+    .then(data => mostrarResultados(data));
+}
+
+function mostrarResultados(productos) {
+  let tabla = `<tr><th>Código</th><th>Nombre</th><th>Acción</th></tr>`;
+
+  productos.forEach(p => {
+    tabla += `
+      <tr>
+        <td>${p.codigo}</td>
+        <td>${p.nombre}</td>
+        <td><button onclick="agregarItem(${p.codigo}, '${p.nombre}')">Añadir</button></td>
+      </tr>`;
+  });
+
+  document.getElementById('resultadosTabla').innerHTML = tabla;
+}
+
+function agregarItem(codigo, nombre) {
+  const tipo = prompt("Tipo (stock / consultoria)");
+  const cantidad = parseInt(prompt("Cantidad:"));
+  const precioVenta = parseInt(prompt("Precio:"));
+
+  itemsPedido.push({ producto_cod: codigo, nombre, cantidad,precioVenta, tipo });
+  renderItems();
+}
+
+function renderItems() {
+  let tabla = `<tr><th>Código</th><th>Nombre</th><th>Cantidad</th><th>Precio</th><th>Tipo</th></tr>`;
+
+  itemsPedido.forEach(i => {
+    tabla += `
+      <tr class='item-row'>
+        <td>${i.producto_cod}</td>
+        <td>${i.nombre}</td>
+        <td>${i.cantidad}</td>
+        <td>${i.precioVenta}</td>
+        <td>${i.tipo}</td>
+      </tr>`;
+  });
+
+  document.getElementById('itemsTabla').innerHTML = tabla;
+}
+
+function crearPedido() {
+  const clienteId = document.getElementById('clienteId').value;
+
+  if (clienteId !=0){
+    fetch('http://127.0.0.1:5000/crear-pedido', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cliente_id: clienteId, items: itemsPedido })
+    })
+    .then(r => r.json())
+    .then(res => {
+      alert("Pedido creado ID: " + res.pedido_id);
+      itemsPedido = [];
+      renderItems();
+      cargarPedidos();
+    });
+  }else{alert("Ingresar ID Cliente")}
+  
+}
+
+function cargarPedidos() {
+  fetch('http://127.0.0.1:5000/pedidos/resumen')
+    .then(r => r.json())
+    .then(data => {
+      let tabla = `<tr><th>ID</th><th>Cliente</th><th>Fecha</th><th>Precio</th><th>Acciones</th></tr>`;
+      data.forEach(p => {
+        let precio = '$'+ p.precio_total
+        tabla += `
+          <tr>
+            <td>${p.id}</td>
+            <td>${p.cliente}</td>
+            <td>${p.fecha}</td>
+            <td>${precio}</td>
+            <td><button onclick="eliminarPedido(${p.id})" style="width: 45%; margin-inline: 2.5%">✏️ Editar</button><button onclick="eliminarPedido(${p.id})" style="width: 45%; margin-inline: 2.5%">🗑️ Eliminar</button></td>
+          </tr>`;
+      });
+      document.getElementById('pedidosTabla').innerHTML = tabla;
+    });
+}
+
+async function eliminarPedido(id) {
+    if (!confirm("¿Seguro que querés eliminar este pedido?")) return;
+
+    const res = await fetch(`http://127.0.0.1:5000/pedidos/${id}`, {
+        method: "DELETE"
+    });
+
+    const data = await res.json();
+    alert(data.message);
+
+    cargarPedidos(); // refrescar lista
+}
+
+function editarPedido(id) {
+    // Más adelante hacemos la pantalla
+    window.location.href = `editar.html?id=${id}`;
+}
+
+function cargarClientes() {
+  fetch('http://127.0.0.1:5000/clientes')
+    .then(r => r.json())
+    .then(data => {
+      console.log(data)
+      let tabla = `<tr><th>ID</th><th>Cliente</th><th>Acciones</th></tr>`;
+      data.forEach(p => {
+        tabla += `
+          <tr>
+            <td>${p.id}</td>
+            <td>${p.nombre}</td>
+            <td><button onclick="editarCliente(${p.id})" style="width: 45%; margin-inline: 2.5%">✏️ Editar</button><button onclick="eliminarCliente(${p.id})" style="width: 45%; margin-inline: 2.5%">🗑️ Eliminar</button></td>
+          </tr>`;
+      });
+      document.getElementById('clientesTabla').innerHTML = tabla;
+    });
+}
+
+function crearCliente() {
+  const nombre_cliente = prompt("Nombre: ");
+  fetch('http://127.0.0.1:5000/crear-cliente', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre: nombre_cliente })
+  })
+  .then(r => r.json())
+  .then(res => {
+    alert("Cliente agregado ID: " + res.cliente_id);
+    cargarClientes();
+  });  
+  
+}
+
+async function eliminarCliente(id) {
+    if (!confirm("¿Seguro que querés eliminar este cliente?")) return;
+
+    const res = await fetch(`http://127.0.0.1:5000/clientes/${id}`, {
+        method: "DELETE"
+    });
+
+    const data = await res.json();
+    alert(data.message);
+
+    cargarClientes(); // refrescar lista
+}
+
+function editarCliente(id) {
+    // Más adelante hacemos la pantalla
+    window.location.href = `editarCliente.html?id=${id}`;
+}
+
+cargarClientes();
+</script>
+
+</body>
+</html>

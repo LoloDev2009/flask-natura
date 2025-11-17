@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Editar Pedido</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+    }
+    input, select {
+        padding: 5px;
+        margin: 4px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    th, td {
+        border: 1px solid #aaa;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background-color: #eee;
+    }
+    button {
+        padding: 5px 10px;
+        margin: 4px;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+
+<h1>Editar Pedido</h1>
+
+<div>
+    <label>Cliente ID:</label>
+    <input id="cliente_id" type="number" />
+</div>
+
+<h2>Items del pedido</h2>
+
+<table id="tablaItems">
+    <thead>
+        <tr>
+            <th>Cód. Producto</th>
+            <th>Nombre</th>
+            <th>Cant.</th>
+            <th>Precio</th>
+            <th>Tipo</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<button onclick="agregarFila()">➕ Añadir producto</button>
+
+<br><br>
+
+<button onclick="guardarCambios()" style="background: #4CAF50; color:white;">
+    💾 Guardar Cambios
+</button>
+
+<script>
+const API = "http://127.0.0.1:5000";
+const urlParams = new URLSearchParams(window.location.search);
+const pedidoId = urlParams.get("id");
+
+// =========================================================
+// Cargar datos del pedido
+// =========================================================
+async function cargarPedido() {
+    const res = await fetch(`${API}/pedidos/${pedidoId}`);
+    const pedido = await res.json();
+
+    document.getElementById("cliente_id").value = pedido.cliente_id;
+
+    const tbody = document.querySelector("#tablaItems tbody");
+    tbody.innerHTML = "";
+
+    pedido.items.forEach(item => agregarFila(item));
+}
+
+// =========================================================
+// Crear fila en la tabla
+// =========================================================
+function agregarFila(item = null) {
+    const tbody = document.querySelector("#tablaItems tbody");
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+        <td><input type="number" class="producto_cod" value="${item ? item.producto_cod : ""}"></td>
+        <td><input type="text" class="nombre" value="${item ? item.nombre : ""}" disabled></td>
+        <td><input type="number" class="cantidad" value="${item ? item.cantidad : 1}"></td>
+        <td><input type="number" step="0.01" class="precio" value="${item ? item.precio : ""}"></td>
+        <td>
+            <select class="tipo">
+                <option value="stock" ${item && item.tipo === "stock" ? "selected" : ""}>Stock</option>
+                <option value="consultoria" ${item && item.tipo === "consultoria" ? "selected" : ""}>Consultoría</option>
+            </select>
+        </td>
+        <td><button onclick="this.parentElement.parentElement.remove()">❌</button></td>
+    `;
+
+    // Si cambian el código, buscar nombre del producto
+    tr.querySelector(".producto_cod").addEventListener("change", async (e) => {
+        const cod = e.target.value;
+        if (cod !== "") {
+            const res = await fetch(`${API}/buscar-producto?q=${cod}`);
+            const productos = await res.json();
+            if (productos.length > 0) {
+                tr.querySelector(".nombre").value = productos[0].nombre;
+            } else {
+                tr.querySelector(".nombre").value = "No encontrado";
+            }
+        }
+    });
+
+    tbody.appendChild(tr);
+}
+
+// =========================================================
+// Guardar cambios (PUT)
+// =========================================================
+async function guardarCambios() {
+    const cliente_id = document.getElementById("cliente_id").value;
+
+    const filas = [...document.querySelectorAll("#tablaItems tbody tr")];
+
+    const items = filas.map(tr => ({
+        producto_cod: Number(tr.querySelector(".producto_cod").value),
+        cantidad: Number(tr.querySelector(".cantidad").value),
+        tipo: tr.querySelector(".tipo").value,
+        precio: Number(tr.querySelector(".precio").value)
+    }));
+
+    const res = await fetch(`${API}/pedidos/${pedidoId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            cliente_id,
+            items
+        })
+    });
+
+    const data = await res.json();
+    alert(data.message);
+    window.location.href = "index.html";
+}
+
+// =========================================================
+cargarPedido();
+</script>
+
+</body>
+</html>
