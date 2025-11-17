@@ -109,45 +109,17 @@ tr:nth-child(even) {
 <h1>Gestión de Pedidos Natura</h1>
 
 <div class="card">
-  <h2>Buscar Producto</h2>
-  <input type="text" id="buscarInput" placeholder="Buscar por nombre o código..." />
-  <button onclick="buscarProducto()">Buscar</button>
-  <div id="resultadosContainer" class="tabla-con-scroll">
-    <table id="resultadosTabla"></table>
-  </div>    
-</div>
-
-<div class="card">
-  <h2>Crear Pedido</h2>
-  <label>Cliente ID:</label>
-  <input type="number" id="clienteId" placeholder="ID del cliente" />
-
-  <h3>Items del pedido</h3>
-  <table id="itemsTabla"></table>
-
-  <button onclick="crearPedido()">Guardar Pedido</button>
-</div>
-
-<div class="card">
   <h2>Pedidos</h2>
-  <button onclick="cargarPedidos()">Recargar Lista</button>
   <table id="pedidosTabla"></table>
+  <button onclick="crearPedido()">Crear Pedido</button>
 </div>
 <div class="card">
   <h2>Clientes</h2>
   <table id="clientesTabla"></table>
-  <button onclick="crearCliente()" style="width: 40%;">Agregar Cliente</button>
+  <button onclick="crearCliente()">Agregar Cliente</button>
 </div>
 
 <script>
-let itemsPedido = [];
-
-function buscarProducto() {
-  const q = document.getElementById('buscarInput').value;
-  fetch(`http://127.0.0.1:5000/buscar-producto?q=${q}`)
-    .then(r => r.json())
-    .then(data => mostrarResultados(data));
-}
 
 function mostrarResultados(productos) {
   let tabla = `<tr><th>Código</th><th>Nombre</th><th>Acción</th></tr>`;
@@ -164,50 +136,25 @@ function mostrarResultados(productos) {
   document.getElementById('resultadosTabla').innerHTML = tabla;
 }
 
-function agregarItem(codigo, nombre) {
-  const tipo = prompt("Tipo (stock / consultoria)");
-  const cantidad = parseInt(prompt("Cantidad:"));
-  const precioVenta = parseInt(prompt("Precio:"));
-
-  itemsPedido.push({ producto_cod: codigo, nombre, cantidad,precioVenta, tipo });
-  renderItems();
-}
-
-function renderItems() {
-  let tabla = `<tr><th>Código</th><th>Nombre</th><th>Cantidad</th><th>Precio</th><th>Tipo</th></tr>`;
-
-  itemsPedido.forEach(i => {
-    tabla += `
-      <tr class='item-row'>
-        <td>${i.producto_cod}</td>
-        <td>${i.nombre}</td>
-        <td>${i.cantidad}</td>
-        <td>${i.precioVenta}</td>
-        <td>${i.tipo}</td>
-      </tr>`;
-  });
-
-  document.getElementById('itemsTabla').innerHTML = tabla;
-}
-
 function crearPedido() {
-  const clienteId = document.getElementById('clienteId').value;
+  window.location.href = `crearPedido.html`;
+}
 
-  if (clienteId !=0){
-    fetch('http://127.0.0.1:5000/crear-pedido', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cliente_id: clienteId, items: itemsPedido })
-    })
+function cargarClientes() {
+  fetch('http://127.0.0.1:5000/clientes')
     .then(r => r.json())
-    .then(res => {
-      alert("Pedido creado ID: " + res.pedido_id);
-      itemsPedido = [];
-      renderItems();
-      cargarPedidos();
+    .then(data => {
+      let tabla = `<tr><th>ID</th><th>Cliente</th><th>Acciones</th></tr>`;
+      data.forEach(p => {
+        tabla += `
+          <tr>
+            <td>${p.id}</td>
+            <td>${p.nombre}</td>
+            <td><button onclick="editarCliente(${p.id})" style="width: 45%; margin-inline: 2.5%">✏️ Editar</button><button onclick="eliminarCliente(${p.id})" style="width: 45%; margin-inline: 2.5%">🗑️ Eliminar</button></td>
+          </tr>`;
+      });
+      document.getElementById('clientesTabla').innerHTML = tabla;
     });
-  }else{alert("Ingresar ID Cliente")}
-  
 }
 
 function cargarPedidos() {
@@ -223,7 +170,7 @@ function cargarPedidos() {
             <td>${p.cliente}</td>
             <td>${p.fecha}</td>
             <td>${precio}</td>
-            <td><button onclick="eliminarPedido(${p.id})" style="width: 45%; margin-inline: 2.5%">✏️ Editar</button><button onclick="eliminarPedido(${p.id})" style="width: 45%; margin-inline: 2.5%">🗑️ Eliminar</button></td>
+            <td><button onclick="editarPedido(${p.id})" style="width: 45%; margin-inline: 2.5%">✏️ Editar</button><button onclick="eliminarPedido(${p.id})" style="width: 45%; margin-inline: 2.5%">🗑️ Eliminar</button></td>
           </tr>`;
       });
       document.getElementById('pedidosTabla').innerHTML = tabla;
@@ -245,27 +192,8 @@ async function eliminarPedido(id) {
 
 function editarPedido(id) {
     // Más adelante hacemos la pantalla
-    window.location.href = `editar.html?id=${id}`;
+    window.location.href = `editarPedido.html?id=${id}`;
 }
-
-function cargarClientes() {
-  fetch('http://127.0.0.1:5000/clientes')
-    .then(r => r.json())
-    .then(data => {
-      console.log(data)
-      let tabla = `<tr><th>ID</th><th>Cliente</th><th>Acciones</th></tr>`;
-      data.forEach(p => {
-        tabla += `
-          <tr>
-            <td>${p.id}</td>
-            <td>${p.nombre}</td>
-            <td><button onclick="editarCliente(${p.id})" style="width: 45%; margin-inline: 2.5%">✏️ Editar</button><button onclick="eliminarCliente(${p.id})" style="width: 45%; margin-inline: 2.5%">🗑️ Eliminar</button></td>
-          </tr>`;
-      });
-      document.getElementById('clientesTabla').innerHTML = tabla;
-    });
-}
-
 function crearCliente() {
   const nombre_cliente = prompt("Nombre: ");
   fetch('http://127.0.0.1:5000/crear-cliente', {
@@ -295,11 +223,12 @@ async function eliminarCliente(id) {
 }
 
 function editarCliente(id) {
-    // Más adelante hacemos la pantalla
-    window.location.href = `editarCliente.html?id=${id}`;
+  // Más adelante hacemos la pantalla
+  window.location.href = `editarCliente.html?id=${id}`;
 }
 
 cargarClientes();
+cargarPedidos();
 </script>
 
 </body>

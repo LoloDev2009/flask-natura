@@ -111,7 +111,7 @@ function agregarFila(item = null) {
     tr.querySelector(".producto_cod").addEventListener("change", async (e) => {
         const cod = e.target.value;
         if (cod !== "") {
-            const res = await fetch(`${API}/buscar-producto?q=${cod}`);
+            const res = await fetch(`${API}/buscarProductoExact?q=${cod}`);
             const productos = await res.json();
             if (productos.length > 0) {
                 tr.querySelector(".nombre").value = productos[0].nombre;

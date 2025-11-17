@@ -28,11 +28,21 @@ def buscar_producto():
     """, (f"%{q}%", f"%{q}%"))
     return jsonify([dict(p) for p in productos])
 
+@app.get("/buscarProductoExact")
+def buscar_producto_exacto():
+    q = request.args.get("q", "")
+    productos = query("""
+        SELECT * FROM productos
+        WHERE codigo = ? ORDER BY codigo LIMIT 1
+    """, (q,))
+    return jsonify([dict(p) for p in productos])
+
 @app.post("/crear-pedido")
 def crear_pedido():
     data = request.json
     cliente_id = data["cliente_id"]
     items = data["items"]
+    print(items)
 
 
     # Crear pedido
@@ -49,9 +59,9 @@ def crear_pedido():
             VALUES (?, ?, ?, ?,?)
         """, (
             pedido_id,
-            item["producto_cod"],
+            item["codigo"],
             item["cantidad"],
-            item["precioVenta"],
+            item["precio"],
             item["tipo"]
         ))
 
@@ -313,6 +323,18 @@ def editar_cliente(cliente_id):
     """, (nombre, cliente_id))
 
     return jsonify({"message": "Cliente actualizado"})
+
+@app.delete("/clientes/<int:cliente_id>")
+def eliminar_cliente(cliente_id):
+    # Verificar que exista
+    cliente = query("SELECT * FROM clientes WHERE id = ?", (cliente_id,), one=True)
+    if cliente is None:
+        return jsonify({"error": "Cliente no encontrado"}), 404
+
+    # Borrar pedido
+    execute("DELETE FROM clientes WHERE id = ?", (cliente_id,))
+
+    return jsonify({"message": "Cliente eliminado"})
 
 @app.get("/debug/items")
 def debug_items():
